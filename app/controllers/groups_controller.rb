@@ -1,39 +1,39 @@
 class GroupsController < ApplicationController
-  before_action :authenticate_user!, only: [ :new, :create, :edit, :update, :destroy ]
+  before_action :authenticate_user!, only: [ :new, :create, :edit, :update, :destroy, :join, :quit ]
   before_action :find_group_and_check_permission, only: [ :edit, :update, :destroy]
 
   def index
-    @groups = Group.all
+     @groups = Group.all
   end
 
   def show
-    @group = Group.find(params[:id])
-    @posts = @group.posts.recent.paginate( :page => params[:page], :per_page => 5 )
+     @group = Group.find(params[:id])
+     @posts = @group.posts.recent.paginate( :page => params[:page], :per_page => 5 )
   end
 
   def edit
   end
 
   def new
-    @group = Group.new
+      @group = Group.new
   end
 
   def create
-    @group = Group.new(group_params)
-    @group.user = current_user
+        @group = Group.new(group_params)
+        @group.user = current_user
 
-    if @group.save
-      redirect_to groups_path
-    else
-      render :new
-    end
+     if @group.save
+        redirect_to groups_path
+     else
+        render :new
+     end
   end
 
   def update
-    if @group.update(group_params)
-      redirect_to groups_path, notice: "Update Success!"
+     if @group.update(group_params)
+         redirect_to groups_path, notice: "Update Success!"
     else
-      render  :edit
+         render  :edit
     end
   end
 
@@ -41,6 +41,30 @@ class GroupsController < ApplicationController
     @group.destroy
     # flash[:alert] = "Group deleted!"
     redirect_to groups_path, alert: "Group deleted!"
+  end
+
+  def join
+     @group = Group.find(params[:id])
+
+     if !current_user.is_member_of?(@group)
+         current_user.join!(@group)
+         flash[:notice] = "加入本討論版成功！"
+     else
+         flash[:warning] = "你已經是本討論版成員了！"
+     end
+     redirect_to groups_path(@group)
+  end
+
+  def quit
+      @group = Group.find(params[:id])
+
+      if current_user.is_member_of?(@group)
+          current_user.quit!(@group)
+          flash[:alert] = "已退出本討論版！"
+      else
+          flash[:warning] = "你不是本討論版成員，怎麼退出XD"
+      end
+      redirect_to groups_path(@group)
   end
 
   private
